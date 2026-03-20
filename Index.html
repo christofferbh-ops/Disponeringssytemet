@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lagerberegner</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #f5f4f0;
+  --surface: #ffffff;
+  --surface2: #f0ede8;
+  --border: #ddd9d3;
+  --border2: #c8c4be;
+  --text: #1a1916;
+  --text2: #6b6860;
+  --text3: #9b9890;
+  --blue: #1a56db;
+  --blue-bg: #eff4ff;
+  --blue-text: #1e429f;
+  --green: #0e7c57;
+  --green-bg: #f0fdf4;
+  --green-text: #065f46;
+  --orange: #c2410c;
+  --orange-bg: #fff7ed;
+  --orange-text: #9a3412;
+  --accent: #1a56db;
+  --radius: 8px;
+  --radius-lg: 12px;
+}
+
+body {
+  font-family: 'IBM Plex Sans', system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  padding: 2rem 1rem 4rem;
+}
+
+.page-header {
+  max-width: 900px;
+  margin: 0 auto 2.5rem;
+}
+
+.page-header h1 {
+  font-size: 22px;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  color: var(--text);
+}
+
+.page-header p {
+  font-size: 14px;
+  color: var(--text2);
+  margin-top: 4px;
+}
+
+.container { max-width: 900px; margin: 0 auto; display: flex; flex-direction: column; gap: 2rem; }
+
+.section-label {
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text3);
+  margin-bottom: 0.75rem;
+  font-family: 'IBM Plex Mono', monospace;
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+}
+
+.tab-bar {
+  display: flex;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  width: fit-content;
+  margin-bottom: 1.25rem;
+}
+
+.tab {
+  padding: 7px 18px;
+  font-size: 13px;
+  cursor: pointer;
+  background: transparent;
+  border: none;
+  color: var(--text2);
+  font-family: 'IBM Plex Sans', sans-serif;
+  transition: background 0.12s, color 0.12s;
+}
+.tab:not(:last-child) { border-right: 1px solid var(--border); }
+.tab.active { background: var(--surface2); color: var(--text); font-weight: 500; }
+.tab:hover:not(.active) { background: var(--surface2); }
+
+.formula-desc {
+  font-size: 13px;
+  color: var(--text2);
+  background: var(--surface2);
+  border-radius: var(--radius);
+  padding: 8px 12px;
+  margin-bottom: 1.25rem;
+  font-family: 'IBM Plex Mono', monospace;
+}
+
+.scenario-grid { display: flex; flex-direction: column; gap: 10px; }
+
+.scenario-row {
+  display: grid;
+  gap: 10px;
+  align-items: end;
+  background: var(--surface2);
+  border-radius: var(--radius);
+  padding: 12px;
+}
+.simple-layout { grid-template-columns: 1.6fr 1.1fr 1.1fr 1.1fr 1fr 1.3fr; }
+.complex-layout { grid-template-columns: 1.4fr 1fr 1fr 1fr 1fr 1fr 1.1fr 1.3fr; }
+
+.field { display: flex; flex-direction: column; gap: 4px; }
+.field label { font-size: 11px; color: var(--text2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.field input, .field select {
+  width: 100%;
+  padding: 6px 9px;
+  font-size: 13px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+  font-family: 'IBM Plex Sans', sans-serif;
+  outline: none;
+  transition: border-color 0.12s;
+}
+.field input:focus, .field select:focus { border-color: var(--accent); }
+
+.row-header { display: flex; align-items: center; gap: 8px; padding-top: 18px; }
+.dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.d1 { background: var(--blue); }
+.d2 { background: var(--green); }
+.d3 { background: var(--orange); }
+.row-name { font-size: 13px; font-weight: 500; }
+
+.result-pill {
+  background: var(--blue-bg);
+  border: 1px solid #c3d4f5;
+  border-radius: var(--radius);
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-height: 52px;
+  justify-content: center;
+}
+.result-pill .rlabel { font-size: 10px; color: var(--blue-text); font-weight: 500; font-family: 'IBM Plex Mono', monospace; }
+.result-pill .rvalue { font-size: 20px; font-weight: 500; color: var(--blue-text); }
+
+.divider { height: 1px; background: var(--border); margin: 1.25rem 0; }
+
+.chart-section { margin-bottom: 0.5rem; }
+.chart-label { font-size: 11px; color: var(--text3); margin-bottom: 8px; font-family: 'IBM Plex Mono', monospace; text-transform: uppercase; letter-spacing: 0.08em; }
+.chart-row { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+.chart-sc { font-size: 12px; font-weight: 500; min-width: 20px; }
+.bar-track { flex: 1; height: 14px; background: var(--surface2); border-radius: 4px; overflow: hidden; }
+.bar-fill { height: 100%; border-radius: 4px; transition: width 0.3s ease; }
+.bar-num { font-size: 12px; color: var(--text2); min-width: 36px; text-align: right; font-family: 'IBM Plex Mono', monospace; }
+
+.derived-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+
+.derived-card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px;
+}
+.derived-card .dc-header { display: flex; align-items: center; gap: 6px; margin-bottom: 10px; }
+.derived-card .dc-header span { font-size: 12px; font-weight: 500; }
+.derived-row { display: flex; justify-content: space-between; font-size: 13px; padding: 3px 0; border-bottom: 1px solid var(--border); }
+.derived-row:last-child { border-bottom: none; }
+.derived-row .dk { color: var(--text2); }
+.derived-row .dv { font-weight: 500; font-family: 'IBM Plex Mono', monospace; }
+.c1 { color: var(--blue); }
+.c2 { color: var(--green); }
+.c3 { color: var(--orange); }
+
+/* EOQ */
+.eoq-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+.eoq-input-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+.eoq-big { font-size: 30px; font-weight: 500; color: var(--text); font-family: 'IBM Plex Mono', monospace; }
+.eoq-sub { font-size: 12px; color: var(--text2); margin-bottom: 4px; }
+.eoq-metrics { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
+.em { background: var(--surface2); border-radius: var(--radius); padding: 10px; }
+.em .el { font-size: 11px; color: var(--text2); margin-bottom: 3px; }
+.em .ev { font-size: 15px; font-weight: 500; font-family: 'IBM Plex Mono', monospace; }
+.formula-note { font-size: 11px; color: var(--text3); margin-top: 10px; font-family: 'IBM Plex Mono', monospace; background: var(--surface2); padding: 8px 10px; border-radius: var(--radius); }
+
+.discount-row { display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 8px; align-items: end; margin-bottom: 8px; }
+.add-btn {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 7px 14px; font-size: 12px;
+  border: 1px solid var(--border); border-radius: var(--radius);
+  background: transparent; cursor: pointer; color: var(--text);
+  font-family: 'IBM Plex Sans', sans-serif; margin-top: 6px;
+}
+.add-btn:hover { background: var(--surface2); }
+.rm-btn { padding: 5px 8px; font-size: 14px; border: none; background: transparent; cursor: pointer; color: var(--text2); border-radius: var(--radius); }
+.rm-btn:hover { background: var(--surface2); }
+
+.tier-card {
+  border-radius: var(--radius);
+  padding: 10px 12px;
+  margin-top: 8px;
+  transition: border-color 0.15s;
+}
+.tier-card.best { border: 1.5px solid var(--blue); background: var(--blue-bg); }
+.tier-card.normal { border: 1px solid var(--border); background: var(--surface2); }
+.tier-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+.tier-title { font-size: 12px; font-weight: 500; font-family: 'IBM Plex Mono', monospace; }
+.best-badge { font-size: 11px; background: #c3d4f5; color: var(--blue-text); padding: 2px 8px; border-radius: 4px; }
+.tier-metrics { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; font-size: 12px; }
+.tier-metrics .tk { color: var(--text2); margin-bottom: 1px; }
+.tier-metrics .tv { font-weight: 500; font-family: 'IBM Plex Mono', monospace; }
+.tier-note { font-size: 11px; color: var(--text3); margin-top: 5px; }
+
+@media (max-width: 680px) {
+  .simple-layout, .complex-layout { grid-template-columns: 1fr 1fr; }
+  .eoq-grid { grid-template-columns: 1fr; }
+  .derived-grid { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<div class="page-header">
+  <h1>Lagerberegner</h1>
+  <p>Beregn sikkerhedslager, genbestillingspunkt og EOQ med og uden mængderabatter</p>
+</div>
+
+<div class="container">
+
+  <!-- SIKKERHEDSLAGER -->
+  <div>
+    <p class="section-label">Sikkerhedslager</p>
+    <div class="card">
+      <div class="tab-bar">
+        <button class="tab active" onclick="switchMode('simple')">Simpel formel</button>
+        <button class="tab" onclick="switchMode('complex')">Med leveringstidsvariabilitet</button>
+      </div>
+      <div class="formula-desc" id="mode-desc">SS = Z × σ_d × √LT &nbsp;|&nbsp; Fast leveringstid, variabel efterspørgsel</div>
+      <div class="scenario-grid" id="ss-rows"></div>
+      <div class="divider"></div>
+      <div class="chart-section">
+        <div class="chart-label">Sammenligning — sikkerhedslager</div>
+        <div id="ss-chart"></div>
+      </div>
+      <div class="divider"></div>
+      <div class="derived-grid" id="derived-results"></div>
+    </div>
+  </div>
+
+  <!-- EOQ -->
+  <div>
+    <p class="section-label">EOQ — Optimal ordremængde</p>
+    <div class="card">
+      <div class="tab-bar">
+        <button class="tab active" onclick="switchEoqMode('basic')">Standard EOQ</button>
+        <button class="tab" onclick="switchEoqMode('discount')">Mængderabatter</button>
+      </div>
+
+      <div id="eoq-basic">
+        <div class="eoq-grid">
+          <div>
+            <div class="eoq-input-row">
+              <div class="field"><label>Årlig efterspørgsel (D)</label><input type="number" id="eoq-D" value="10000" min="1" oninput="calcEoq()"></div>
+              <div class="field"><label>Ordreomkostning (S, kr.)</label><input type="number" id="eoq-S" value="50" min="0" oninput="calcEoq()"></div>
+            </div>
+            <div class="eoq-input-row">
+              <div class="field"><label>Enhedspris (C, kr.)</label><input type="number" id="eoq-C" value="10" step="0.01" oninput="calcEoq()"></div>
+              <div class="field"><label>Lagerholdssats (i, %)</label><input type="number" id="eoq-i" value="20" step="0.1" oninput="calcEoq()"></div>
+            </div>
+            <div class="eoq-input-row">
+              <div class="field"><label>Gns. efterspørgsel/dag (d̄)</label><input type="number" id="eoq-d" value="27.4" step="0.1" oninput="calcEoq()"></div>
+              <div class="field"><label>Leveringstid (dage)</label><input type="number" id="eoq-lt" value="7" min="1" oninput="calcEoq()"></div>
+            </div>
+          </div>
+          <div id="eoq-result-basic"></div>
+        </div>
+      </div>
+
+      <div id="eoq-discount" style="display:none">
+        <div class="eoq-grid">
+          <div>
+            <div class="eoq-input-row">
+              <div class="field"><label>Årlig efterspørgsel (D)</label><input type="number" id="dsc-D" value="10000" min="1" oninput="calcDiscount()"></div>
+              <div class="field"><label>Ordreomkostning (S, kr.)</label><input type="number" id="dsc-S" value="50" min="0" oninput="calcDiscount()"></div>
+            </div>
+            <div class="eoq-input-row">
+              <div class="field"><label>Lagerholdssats (i, %)</label><input type="number" id="dsc-i" value="20" step="0.1" oninput="calcDiscount()"></div>
+            </div>
+            <p style="font-size:12px;color:var(--text2);margin-bottom:8px;">Prisniveauer (op til 4 trin)</p>
+            <div id="discount-tiers"></div>
+            <button class="add-btn" onclick="addTier()">+ Tilføj prisniveau</button>
+          </div>
+          <div id="eoq-result-discount"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const Z_MAP = { 0.80:0.84, 0.85:1.04, 0.90:1.28, 0.95:1.645, 0.97:1.88, 0.99:2.326 };
+const SERVICE_LABELS = { 0.80:'80%', 0.85:'85%', 0.90:'90%', 0.95:'95%', 0.97:'97%', 0.99:'99%' };
+const COLORS = ['var(--blue)','var(--green)','var(--orange)'];
+const DOT_CLASSES = ['d1','d2','d3'];
+const VAL_CLASSES = ['c1','c2','c3'];
+
+let ssMode = 'simple';
+
+const scenarios = [
+  { name:'Scenarie 1', d_mean:50, sigma_d:10, lt:7, sigma_lt:2, service:0.95 },
+  { name:'Scenarie 2', d_mean:50, sigma_d:10, lt:7, sigma_lt:2, service:0.90 },
+  { name:'Scenarie 3', d_mean:50, sigma_d:10, lt:7, sigma_lt:2, service:0.99 },
+];
+
+function switchMode(m) {
+  ssMode = m;
+  document.querySelectorAll('.tab-bar')[0].querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',(i===0&&m==='simple')||(i===1&&m==='complex')));
+  document.getElementById('mode-desc').textContent = m==='simple'
+    ? 'SS = Z × σ_d × √LT  |  Fast leveringstid, variabel efterspørgsel'
+    : 'SS = Z × √(LT × σ_d² + d̄² × σ_LT²)  |  Variabilitet i både efterspørgsel og leveringstid';
+  renderSSRows();
+}
+
+function switchEoqMode(m) {
+  document.querySelectorAll('.tab-bar')[1].querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',(i===0&&m==='basic')||(i===1&&m==='discount')));
+  document.getElementById('eoq-basic').style.display = m==='basic'?'':'none';
+  document.getElementById('eoq-discount').style.display = m==='discount'?'':'none';
+  if(m==='discount') calcDiscount();
+}
+
+function renderSSRows() {
+  const isC = ssMode==='complex';
+  document.getElementById('ss-rows').innerHTML = scenarios.map((s,i)=>`
+    <div class="scenario-row ${isC?'complex-layout':'simple-layout'}">
+      <div class="row-header">
+        <span class="dot ${DOT_CLASSES[i]}"></span>
+        <span class="row-name">${s.name}</span>
+      </div>
+      <div class="field"><label>Gns. efterspørgsel/dag (d̄)</label><input type="number" id="dm_${i}" value="${s.d_mean}" min="0" step="1" oninput="updateSS()"></div>
+      <div class="field"><label>Std.afv. efterspørgsel (σ_d)</label><input type="number" id="sd_${i}" value="${s.sigma_d}" min="0" step="0.5" oninput="updateSS()"></div>
+      <div class="field"><label>Leveringstid (dage)</label><input type="number" id="lt_${i}" value="${s.lt}" min="1" oninput="updateSS()"></div>
+      ${isC?`<div class="field"><label>Std.afv. lev.tid (σ_LT)</label><input type="number" id="slt_${i}" value="${s.sigma_lt}" min="0" step="0.5" oninput="updateSS()"></div>`:''}
+      <div class="field"><label>Serviceniveau</label>
+        <select id="sl_${i}" onchange="updateSS()">
+          ${Object.entries(SERVICE_LABELS).map(([v,l])=>`<option value="${v}" ${parseFloat(v)===s.service?'selected':''}>${l}</option>`).join('')}
+        </select>
+      </div>
+      <div class="result-pill">
+        <span class="rlabel">Sikkerhedslager</span>
+        <span class="rvalue" id="ssv_${i}">—</span>
+      </div>
+    </div>
+  `).join('');
+  updateSS();
+}
+
+function calcSS(dm, sd, lt, slt, sv) {
+  const z = Z_MAP[sv]||1.645;
+  if(ssMode==='simple') return z*sd*Math.sqrt(lt);
+  return z*Math.sqrt(lt*sd*sd + dm*dm*slt*slt);
+}
+
+function updateSS() {
+  const res = scenarios.map((_,i)=>{
+    const dm=parseFloat(document.getElementById(`dm_${i}`)?.value)||0;
+    const sd=parseFloat(document.getElementById(`sd_${i}`)?.value)||0;
+    const lt=parseFloat(document.getElementById(`lt_${i}`)?.value)||1;
+    const slt=ssMode==='complex'?(parseFloat(document.getElementById(`slt_${i}`)?.value)||0):0;
+    const sv=parseFloat(document.getElementById(`sl_${i}`)?.value)||0.95;
+    const ss=calcSS(dm,sd,lt,slt,sv);
+    document.getElementById(`ssv_${i}`).textContent=ss.toFixed(1);
+    return {ss,dm,lt,sv};
+  });
+  renderChart(res);
+  renderDerived(res);
+}
+
+function renderChart(res) {
+  const mx=Math.max(...res.map(r=>r.ss),1);
+  document.getElementById('ss-chart').innerHTML=res.map((r,i)=>`
+    <div class="chart-row">
+      <span class="chart-sc" style="color:${COLORS[i]}">S${i+1}</span>
+      <div class="bar-track"><div class="bar-fill" style="width:${Math.max(2,r.ss/mx*100).toFixed(1)}%;background:${COLORS[i]};"></div></div>
+      <span class="bar-num">${r.ss.toFixed(1)}</span>
+    </div>
+  `).join('');
+}
+
+function renderDerived(res) {
+  document.getElementById('derived-results').innerHTML=res.map((r,i)=>{
+    const rop=(r.dm*r.lt+r.ss).toFixed(1);
+    const maxS=r.ss.toFixed(1);
+    return `
+      <div class="derived-card">
+        <div class="dc-header">
+          <span class="dot ${DOT_CLASSES[i]}"></span>
+          <span>Scenarie ${i+1} — SN ${(r.sv*100).toFixed(0)}%</span>
+        </div>
+        <div class="derived-row"><span class="dk">Sikkerhedslager</span><span class="dv ${VAL_CLASSES[i]}">${r.ss.toFixed(1)}</span></div>
+        <div class="derived-row"><span class="dk">Minimumslager</span><span class="dv ${VAL_CLASSES[i]}">${maxS}</span></div>
+        <div class="derived-row"><span class="dk">Genbestillingspunkt</span><span class="dv ${VAL_CLASSES[i]}">${rop}</span></div>
+      </div>
+    `;
+  }).join('');
+}
+
+function calcEoq() {
+  const D=parseFloat(document.getElementById('eoq-D')?.value)||0;
+  const S=parseFloat(document.getElementById('eoq-S')?.value)||0;
+  const C=parseFloat(document.getElementById('eoq-C')?.value)||0;
+  const i=parseFloat(document.getElementById('eoq-i')?.value)||0;
+  const d=parseFloat(document.getElementById('eoq-d')?.value)||0;
+  const lt=parseFloat(document.getElementById('eoq-lt')?.value)||0;
+  const H=C*i/100;
+  const eoq=H>0?Math.sqrt(2*D*S/H):0;
+  const rop=d*lt;
+  const orders=D/(eoq||1);
+  const cost=D*C+(D/(eoq||1))*S+(eoq/2)*H;
+  document.getElementById('eoq-result-basic').innerHTML=`
+    <div>
+      <div class="eoq-sub">Optimal ordremængde (EOQ)</div>
+      <div class="eoq-big">${eoq.toFixed(0)}</div>
+      <div style="font-size:12px;color:var(--text2);margin-top:2px;">enheder pr. ordre</div>
+      <div class="eoq-metrics">
+        <div class="em"><div class="el">Genbestillingspunkt</div><div class="ev">${rop.toFixed(1)}</div></div>
+        <div class="em"><div class="el">Maks. lager</div><div class="ev">${eoq.toFixed(0)}</div></div>
+        <div class="em"><div class="el">Ordrer pr. år</div><div class="ev">${orders.toFixed(1)}</div></div>
+        <div class="em"><div class="el">Samlet årlig omk.</div><div class="ev">${cost.toFixed(0)} kr.</div></div>
+      </div>
+      <div class="formula-note">H = C × i = ${H.toFixed(2)} kr./enhed/år &nbsp;·&nbsp; EOQ = √(2DS/H)</div>
+    </div>
+  `;
+}
+
+let tiers = [
+  {min:0, max:499, price:12},
+  {min:500, max:999, price:10.5},
+  {min:1000, max:null, price:9},
+];
+
+function renderTiers() {
+  document.getElementById('discount-tiers').innerHTML=tiers.map((t,i)=>`
+    <div class="discount-row">
+      <div class="field"><label>Min. antal</label><input type="number" value="${t.min}" min="0" oninput="tiers[${i}].min=parseInt(this.value)||0;calcDiscount()"></div>
+      <div class="field"><label>Maks. antal</label><input type="number" value="${t.max===null?'':t.max}" placeholder="∞" oninput="tiers[${i}].max=this.value===''?null:parseInt(this.value);calcDiscount()"></div>
+      <div class="field"><label>Enhedspris (kr.)</label><input type="number" value="${t.price}" min="0" step="0.01" oninput="tiers[${i}].price=parseFloat(this.value)||0;calcDiscount()"></div>
+      <button class="rm-btn" onclick="removeTier(${i})">✕</button>
+    </div>
+  `).join('');
+}
+
+function addTier() {
+  if(tiers.length>=4) return;
+  const last=tiers[tiers.length-1];
+  tiers.push({min:(last.max||0)+1, max:null, price:Math.max(0,last.price-0.5)});
+  if(tiers.length>1) tiers[tiers.length-2].max=tiers[tiers.length-1].min-1;
+  renderTiers(); calcDiscount();
+}
+
+function removeTier(i) { tiers.splice(i,1); renderTiers(); calcDiscount(); }
+
+function calcDiscount() {
+  renderTiers();
+  const D=parseFloat(document.getElementById('dsc-D')?.value)||10000;
+  const S=parseFloat(document.getElementById('dsc-S')?.value)||50;
+  const rate=parseFloat(document.getElementById('dsc-i')?.value)||20;
+  const res=tiers.map(t=>{
+    const H=t.price*rate/100;
+    const eoq=H>0?Math.sqrt(2*D*S/H):0;
+    const feasible=eoq>=t.min&&(t.max===null||eoq<=t.max);
+    const adjQ=feasible?eoq:Math.max(t.min, t.max===null?t.min:Math.min(eoq,t.max));
+    const cost=D*t.price+(D/adjQ)*S+(adjQ/2)*H;
+    return {t, eoq, adjQ, feasible, cost};
+  });
+  const best=res.reduce((a,b)=>a.cost<b.cost?a:b);
+  document.getElementById('eoq-result-discount').innerHTML=`
+    <div>
+      <div class="eoq-sub">Sammenligning af prisniveauer</div>
+      ${res.map(r=>`
+        <div class="tier-card ${r===best?'best':'normal'}">
+          <div class="tier-header">
+            <span class="tier-title">${r.t.min}–${r.t.max===null?'∞':r.t.max} stk. @ ${r.t.price} kr.</span>
+            ${r===best?'<span class="best-badge">Bedste valg</span>':''}
+          </div>
+          <div class="tier-metrics">
+            <div><div class="tk">EOQ</div><div class="tv">${r.eoq.toFixed(0)}</div></div>
+            <div><div class="tk">Ordremængde</div><div class="tv">${r.adjQ.toFixed(0)}</div></div>
+            <div><div class="tk">Årlig omk.</div><div class="tv">${r.cost.toFixed(0)} kr.</div></div>
+          </div>
+          ${!r.feasible?'<div class="tier-note">EOQ uden for intervallet → justeret til intervalgrænse</div>':''}
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
+renderSSRows();
+calcEoq();
+renderTiers();
+calcDiscount();
+</script>
+</body>
+</html>
